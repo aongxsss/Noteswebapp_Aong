@@ -6,7 +6,6 @@ import NoteCard from "../components/NoteCard";
 import NavBar from "../components/NavBar";
 import axios from "axios";
 
-const current = new Date();
 const { TextArea } = Input;
 
 function HomePage() {
@@ -14,53 +13,34 @@ function HomePage() {
   const [newNoteText, setNewNoteText] = useState("");
   const [plusColor, setPlusColor] = useState("gray");
   const [username, setUsername] = useState("");
-
-
-  // noteList = [
-  //   {
-  //     value: '1',
-  //     color: "pink",
-  //     category: "Tag",
-  //     date: current.toDateString(),
-  //   },
-  //   {
-  //     value: '1',
-  //     color: "pink",
-  //     category: "Tag",
-  //     date: current.toDateString(),
-  //   },
-  //   {
-  //     value: '1',
-  //     color: "pink",
-  //     category: "Tag",
-  //     date: current.toDateString(),
-  //   }
-  // ]
+  const [error, setError] = useState("");
 
 
   const handleTextChange = (evt) => {
-    console.log("text change", evt.target.value);
+    // console.log("text change", evt.target.value);
     setNewNoteText({
-      value: evt.target.value,
+      id: new Date(),
+      note: evt.target.value,
       color: "pink",
       category: "Tag",
-      date: current.toDateString(),
+      date: new Date(),
     });
   };
 
   const handleCreateNote = (evt) => {
-    const submitData = { note: newNoteText, user: username };
+    const submitData = { ...newNoteText, user: 'aong' };
     console.log("create note click", submitData);
-
-    // axios.post(`http://localhost:5000` + `/notes`, submitData, { withCredentials: true }).then((res) => {
-    //   console.log('post notes', res.data)
-    //   if (res.data.message == 'login sucesss') {
-    //     setUserLoggedIn(true)
-    //     setUserLoggedInName(res.data.username)
-    //   }
-    // })
-
-    setNoteList([...noteList, newNoteText]);
+    
+    axios.post(`http://localhost:5000/notes`, submitData, { withCredentials: true }).then((res) => {
+      if (res.data.isError) {
+        setError(res.data.message)
+        setTimeout(() => {
+          setError('')
+        }, 3000);
+      } else {
+        setNoteList([...noteList, newNoteText]);
+      }
+    })
   };
 
   const handleMouseEnter = () => {
@@ -80,29 +60,47 @@ function HomePage() {
     }
   }, [noteList]);
 
+  useEffect(() => {
+    initListNote()
+  }, []);
+
+  const initListNote = async() => {
+    const res = await axios.get(`http://localhost:5000/notes`)
+    if(!res.data.isError) {
+      setNoteList(res.data.data)
+    }
+  }
+
   const handleUserNameCallback = (username) => {
     setUsername(username);
   };
 
-  const handleChangeColor = (i, color) => {
-    const map = noteList.map((item, index) => {
-      return index === i ? { ...item, color: color } : { ...item };
-    });
-    setNoteList(map);
+  const handleChangeColor = async (id, color ) => {
+    const res = await axios.put(`http://localhost:5000/notes/color`,{ color, id})
+    if (res.data.isError) {
+      alert(res.data.message)
+    } else {
+      initListNote()
+    }
+    
   };
 
-  const handleChangeCategory = (i, category) => {
-    const map = noteList.map((item, index) => {
-      return index === i ? { ...item, category: category } : { ...item };
-    });
-    setNoteList(map);
+  const handleChangeCategory = async(id, category) => {
+    const res = await axios.put(`http://localhost:5000/notes/category`,{ category, id})
+    if (res.data.isError) {
+      alert(res.data.message)
+    } else {
+      initListNote()
+    }
   };
   
-  const handleDelete = (i) => {
-    const map = noteList.filter((item, index) => {
-      return index !== i
-    });
-    setNoteList(map);
+  const handleDelete = async(id) => {
+    const res = await axios.delete(`http://localhost:5000/notes`,{ data: { id } })
+    if (res.data.isError) {
+      alert(res.data.message)
+    } else {
+      initListNote()
+    }
   };
 
   return (
@@ -156,14 +154,15 @@ function HomePage() {
                 <div style={{ display: "flex" }}>
                   <div style={{ width: "20%" }}>
                     <span style={{ fontWeight: "bold", marginLeft: "10px" }}>
-                      {note.date}{" "}
+                      {new Date(note.date).toDateString()}{" "}
                     </span>
                     <span style={{ fontWeight: "bolder", marginLeft: "10px" }}>
                       {note.category}{" "}
                     </span>
                   </div>
                   <div style={{ width: "100%", textAlign: "center" }}>
-                    <p> {note.value} </p>
+                    <p> {note.note} </p>
+              
                   </div>
                 </div>
 
@@ -178,7 +177,7 @@ function HomePage() {
                       backgroundColor: "#B2B2B2",
                       cursor: "pointer",
                     }}
-                    onClick={() => handleChangeCategory(i, "work")}
+                    onClick={() => handleChangeCategory( note.id, "work")}
                   >
                     {" "}
                     work{" "}
@@ -193,7 +192,7 @@ function HomePage() {
                       backgroundColor: "#B2B2B2",
                       cursor: "pointer",
                     }}
-                    onClick={() => handleChangeCategory(i, "school")}
+                    onClick={() => handleChangeCategory(note.id,"school")}
                   >
                     {" "}
                     school{" "}
@@ -209,7 +208,7 @@ function HomePage() {
                       backgroundColor: "#B2B2B2",
                       cursor: "pointer",
                     }}
-                    onClick={() => handleChangeCategory(i, "home")}
+                    onClick={() => handleChangeCategory(note.id,"home")}
                   >
                     {" "}
                     home{" "}
@@ -225,7 +224,7 @@ function HomePage() {
                       marginRight: "10px",
                       cursor: "pointer",
                     }}
-                    onClick={() => handleChangeColor(i, "#DD5353")}
+                    onClick={() => handleChangeColor(note.id, "#DD5353")}
                   ></div>
                   <div
                     style={{
@@ -237,7 +236,7 @@ function HomePage() {
                       marginRight: "10px",
                       cursor: "pointer",
                     }}
-                    onClick={() => handleChangeColor(i, "#FFE15D")}
+                    onClick={() => handleChangeColor(note.id,"#FFE15D")}
                   >
                     {" "}
                   </div>
@@ -251,7 +250,7 @@ function HomePage() {
                       marginRight: "10px",
                       cursor: "pointer",
                     }}
-                    onClick={() => handleChangeColor(i, "pink")}
+                    onClick={() => handleChangeColor(note.id,"pink")}
                   >
                     {" "}
                   </div>
@@ -265,7 +264,7 @@ function HomePage() {
                       marginRight: "10px",
                       cursor: "pointer",
                     }}
-                    onClick={() => handleChangeColor(i, "#5F8D4E")}
+                    onClick={() => handleChangeColor(note.id,"#5F8D4E")}
                   >
                     {" "}
                   </div>
@@ -279,7 +278,7 @@ function HomePage() {
                       marginRight: "10px",
                       cursor: "pointer",
                     }}
-                    onClick={() => handleChangeColor(i, "#EF9A53")}
+                    onClick={() => handleChangeColor(note.id,"#EF9A53")}
                   >
                     {" "}
                   </div>
@@ -293,7 +292,7 @@ function HomePage() {
                       marginRight: "10px",
                       cursor: "pointer",
                     }}
-                    onClick={() => handleChangeColor(i, "#59C1BD")}
+                    onClick={() => handleChangeColor(note.id,"#59C1BD")}
                   >
                     {" "}
                   </div>
@@ -307,7 +306,7 @@ function HomePage() {
                       marginRight: "10px",
                       cursor: "pointer",
                     }}
-                    onClick={() => handleChangeColor(i, "#7743DB")}
+                    onClick={() => handleChangeColor(note.id,"#7743DB")}
                   >
                     {" "}
                   </div>
@@ -318,7 +317,7 @@ function HomePage() {
                       cursor: "pointer",
                       color: 'darkblue'
                     }}
-                    onClick={() => handleDelete(i)}
+                    onClick={() => handleDelete(note.id)}
                   >
                     delete
                   </div>
@@ -339,7 +338,7 @@ function HomePage() {
           }}
         >
           <h2 style={{ textAlign: "center" }}> Create New Note</h2>
-
+          <h2  style={{ textAlign: "center", color: 'red' }} >{error}</h2>
           <div style={{ margin: "20px" }}>
             <TextArea rows={4} onChange={handleTextChange} />
           </div>

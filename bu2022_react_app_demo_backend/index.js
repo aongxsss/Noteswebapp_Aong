@@ -20,7 +20,7 @@ app.use(express.static(__dirname + '/public'));
 app.use(
     cors({
         origin: ["http://localhost:3000"],
-        methods: ["GET", "POST"],
+        methods: ["GET", "POST", "PUT", "DELETE"],
         credentials: true,
     })
 );
@@ -82,19 +82,83 @@ app.get('/', (req, res) => {
 })
 
 app.post('/notes', (req, res) => {
-
     res.header("Access-Control-Allow-Origin", "http://localhost:3000");
-
-    console.log('post notes body', req.body)
-
-    var newNote = new Notes({ note: req.body.note, user: req.body.user });
-    newNote.save().then(user => {
-
-        res.json({ message: 'save note success' })
+    const newNote = new Notes({ 
+        id: req.body.id,
+        note: req.body.note, 
+        user: req.body.user, 
+        color: req.body.color, 
+        category : req.body.category, 
+        date : req.body.date, 
+    });
+    newNote.save().then(() => {
+        res.json({isError: false, message: 'save note success' })
     })
-        .catch(() => {
-            res.json({ message: 'save note failed' })
+        .catch((error) => {
+            res.json({isError: true, message: 'save note failed' })
         })
+})
+
+
+app.get('/notes',async (req, res) => {
+    res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+    try {
+        const data = await Notes.find().select('-_id, -__v')
+        res.json({isError: false, message: 'save note success', data })
+    } catch (error) {
+        res.json({isError: true, message: 'save note failed' })
+    }
+})
+
+app.put('/notes/color',async (req, res) => {
+    res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+    try {
+        const data = await Notes.updateOne(
+            {
+                id: req.body.id
+            },
+            {
+                color: req.body.color,
+            }
+        )
+        res.json({isError: false, message: 'save note success' })
+    } catch (error) {
+        res.json({isError: true, message: 'save note failed' })
+    }
+})
+
+
+app.put('/notes/category',async (req, res) => {
+    res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+    try {
+        const data = await Notes.updateOne(
+            {
+                id: req.body.id
+            },
+            {
+                category: req.body.category,
+            }
+        )
+        res.json({isError: false, message: 'update category success' })
+    } catch (error) {
+        res.json({isError: true, message: 'update category failed' })
+    }
+})
+
+app.delete('/notes',async (req, res) => {
+    console.log(req.body)
+    res.header("Access-Control-Allow-Origin", "http://localhost:3000");
+    try {
+        const data = await Notes.deleteOne(
+            {
+                id: req.body.id
+            }
+        )
+        res.json({isError: false, message: 'delete note success' })
+    } catch (error) {
+        console.log(error)
+        res.json({isError: true, message: 'delete note failed' })
+    }
 })
 
 app.get('/users', (req, res) => {
